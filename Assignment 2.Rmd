@@ -1,0 +1,124 @@
+---
+title: "Assignment_2"
+author: "Khutso Ledwaba"
+date: "2022-10-05"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Call the data file
+```{r}
+UBData <- data.frame(read.csv("UniversalBank.csv"))
+UBData
+
+str(UBData)
+library("ggplot2")
+library("gmodels")
+library("caret")
+library("ISLR")
+library("class")
+```
+##Organizing UB data
+```{r}
+UBData <- UBData[,c(-1,-5)]
+head(UBData, n=7)
+tail(UBData, n=7)
+
+##Converting Personal loan and Education to factors
+UBData$Education <- as.factor(UBData$Education)
+
+UBData$Personal.Loan <- as.factor(UBData$Personal.Loan)
+
+##creating Dummy variables for Education
+UBData_Dummy <- dummyVars(~Education, UBData)
+head(predict(UBData_Dummy, UBData))
+
+UB2 <- predict(UBData_Dummy,UBData)
+
+UB3 <- UBData[,-10]
+UB <- cbind(UB3,UB2)
+colnames(UB)
+```
+##Set the seed function as 14
+```{r}
+set.seed(14)
+```
+
+##Training and Validation sets 
+```{r}
+UBData_Train <- createDataPartition(UB$Personal.Loan, p=0.6, list=F)
+#Training data
+UB_Training <- UB[UBData_Train,]
+#Validation data
+UB_Validation <- UB[-UBData_Train,]
+
+#Normalizing the training and validation data
+
+Normalized.values <- preProcess(UB_Training[, -c(8)], method=c("center", "scale"))
+UB_TrainingNormalized <- predict(Normalized.values, UB_Training[, -c(8)])
+UB_ValidationNormalized <- predict(Normalized.values, UB_Validation[, -c(8)])
+
+
+```
+
+
+##Normalizing the customer data set
+```{r}
+CustomerData <- cbind.data.frame(Age = 40,Experience = 10, Income = 84, Family = 2, CCAvg = 2, Mortgage = 0, Securities.Account = 0, CD.Account = 0, Online = 1, CreditCard = 1, Education1 = 0, Education2 = 1, Education3 = 0)
+
+CustomerData
+#Normalizing the data
+UB_TestNorm<- predict(Normalized.values, CustomerData)
+```
+
+#Question 1
+```{r}
+
+K.Value <- knn(Train=UB_TrainingNormalized[, -c(8)], Test = UB_TestNorm , cl=UB_TrainingNormalized[, -c(8)], k=1)
+
+knn.attributes <- attributes(K.Value)
+
+knn.attributes[1]
+
+head(K.Value)
+```
+The loan was not accepted as when K=1 the customer value is 0 and 0 is defined as the loan being denied.
+
+
+# Question number 2
+```{r}
+set.seed(800)
+search_grid <- expand.grid(k=c(1:30))
+
+Example <- train(Personal.Loan~Age+Experience+Income+Family+CCAvg+Mortgage+Securities.Account+CD.Account+Online+CreditCard+Education1+Education2+Education3, data=UB_TrainingNormalized, method="knn", Grid = search_grid)
+Example
+K <- Example$bestTune[[1]]
+K
+```
+The best value is where k = 1. 
+
+# Question 3
+```{r}
+CF <- predict(Example,UB_ValidationNormalized[,(-8)])
+
+confusionMatrix(CF, UB_ValidationNormalized[8])
+```
+
+
+# Question 4
+```{r}
+CustomerData2= data.frame(Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0, Mortgage = 0, Securities.Account = 0, CD.Account = 0, Online = 1, CreditCard = 1, stringAsFactors = FALSE)
+
+K.Value2 <- knn(train = UB_TrainingNormalized[,(-8)],test = CustomerData2, cl = UB_TrainingNormalized[,(8)], k=k)
+K.Value2
+```
+The customer is listed as 0 and shows that the loan has been denied
+
+#question 5
+set.seed(800)
