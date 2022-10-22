@@ -1,0 +1,120 @@
+---
+title: "Assignment_3"
+author: "Khutso Ledwaba"
+date: "2022-10-13"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+*Calling the data file and the required packages*
+```{r}
+library("ggplot2")
+library("gmodels")
+library("caret")
+library("ISLR")
+library("class")
+library("e1071")
+library("dplyr")
+library("melt")
+library("reshape")
+library("reshape2")
+library("readr")
+library("ISLR")
+library("pROC")
+UBData <- read.csv("UniversalBank.csv")
+UBData <- data.frame(read.csv("UniversalBank.csv"))
+UBData
+
+str(UBData)
+```
+
+*Partitioning the data into Training_Dataing and validation sets*
+```{r}
+#Converting the predictor attributes to factors
+UBData$CreditCard <- as.factor(UBData$CreditCard)
+UBData$Personal.Loan <- as.factor(UBData$Personal.Loan)
+UBData$Online <- as.factor(UBData$Online)
+
+
+test.na <- is.na.data.frame(UBData)
+
+
+set.seed(678)
+Partition_data <- createDataPartition(UBData$Personal.Loan,p=.6, list=F)
+Training_Data <- UBData[Partition_data,]
+Validate_Data <- UBData[-Partition_data,]
+
+#Data Normalization
+norm_model <- preProcess(Training_Data[,-c(10,13:14)], 
+                method=c("center","scale"))
+Training_Data_norm <- predict(norm_model,Training_Data)
+Validate_Data_norm <- predict(norm_model,Validate_Data)
+```
+
+## Question A 
+```{r}
+table_1 <- ftable(Training_Data_norm[,c(14,10,13)])
+table_1
+```
+
+##Question B
+$$
+\text{ The probability of a customer accepting a loan offer while being an active online banking user is  = 51/(51+467) = 0.0984}
+$$
+
+
+## Question C
+```{r}
+Online <- melt(Training_Data_norm,id=c("Personal.Loan"),variable="Online")
+Creditcard <- melt(Training_Data_norm,id=c("Personal.Loan"), variable="CreditCard")
+cast_online <- dcast(Online, Personal.Loan~Online)
+cast_creditcard <- dcast(Creditcard, Personal.Loan~CreditCard)
+```
+
+## Question D
+```{r}
+ftable(Training_Data_norm[,c(10,13)])
+ftable(Training_Data_norm[,c(10,14)])
+ftable(Training_Data_norm[,10])
+```
+
+
+*1. P(CreditCard = 1 | Personal.Loan = 1) = 84/(84+204) =* ***0.2916***\vspace{3mm}\newline
+*2. P(Online= 1 | Personal.Loan= 1) = 176/(176+112) =* ***0.6111***\vspace{3mm} \newline
+*3. P(Personal.Loan = 1) = 288/(288+2712) =* ***0.096***\vspace{3mm} \newline
+*4. P(CreditCard= 1 | Personal.Loan= 0) = 777/(777+1935) =* ***0.2865***\vspace{3mm} \newline
+*5. P(Online=1 |Personal.Loan=0) = 1611/(1611+1101) =* ***0.5940***\vspace{3mm} \newline
+*6. P(Personal.Loan = 0) = 2712/(2712+288) =* ***0.904***\vspace{3mm} \newline
+
+
+
+
+## Question E
+$$
+
+(0.2916 x0.6111 x 0.096) / (0.2916 x 0.6111 x 0.096) + (0.2865 x 0.5940 x 0.904) = 0.1000\\
+$$
+
+##Question F
+$$
+
+\text {By comparing the value obtained above by using the Naive Bayes probability i.e. 0.1000 to the value obtained in step b i.e. 0.0984 we get to see that both the values are almost similar, but Naive Bayes has a bit higher probability when compared to that with the direct calculation}
+
+$$
+## Question G
+```{r}
+NB <- naiveBayes(Personal.Loan~Online+CreditCard,data=Training_Data_norm)
+NB
+```
+
+$$
+\text {The value obtained when I ran the Naive Bayes Model for the customer is equivalent to the value obtained in E}
+$$
+
