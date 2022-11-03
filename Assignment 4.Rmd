@@ -1,0 +1,100 @@
+---
+title: "Assignment 4"
+author: "Khutso Ledwaba"
+date: "2022-10-30"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+```{r}
+library("ggplot2")
+library("gmodels")
+library("caret")
+library("ISLR")
+library("class")
+library("e1071")
+library("dplyr")
+library("melt")
+library("reshape")
+library("reshape2")
+library("readr")
+library("ISLR")
+library("pROC")
+library("cluster")
+
+#Calling of the data file
+
+Pharma <- read.csv(file = 'Pharmaceuticals.csv') 
+Pharma
+str(Pharma)
+
+head(Pharma)
+```
+
+##Question 1
+```{r}
+Pharma<- Pharma[,3:11]
+#Display the first rows in the data
+head(Pharma)
+
+#Scale all the  ariables in the data frame.
+Pharma <- scale(Pharma)
+head(Pharma)
+ 
+#The number of clusters required for the analysis
+Clusters <- (nrow(Pharma)-1)*sum(apply(Pharma,2,var))
+Clusters
+
+
+for (i in 2:15) Clusters[i] <- sum(kmeans(Pharma,centers=i)$withinss)
+Clusters
+
+# Graph to analyze the clusters
+
+plot(1:15, Clusters, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares")
+```
+
+## Question 2 interpretation of the clusters
+```{r}
+#Partitioning the data
+
+ fit <- kmeans(Pharma, 5)
+ aggregate(Pharma,by=list(fit$cluster),FUN=mean)
+ 
+Pharma1 <- data.frame(Pharma, fit$cluster)
+Pharma1
+
+
+clusplot(Pharma, fit$cluster, color=TRUE, shade=TRUE, labels=2, lines=0)
+
+
+
+# From the output we see that Cluster 1 has the lowest Leverage.
+# Cluster 2 has the lowest ROE, lowest ROA,lowest Net Profit Margin, highest PE ratio,  and lowest Asset Turnover, 
+# Cluster 3 has the highest ROA, highest Asset Turnover Market Cap, highest ROE
+# Cluster 4 has the lowest Beta, lowest PE Ratio, Net Profit Margin and lowest Rev growth.
+# Cluster 5 has the highest Leverage, highest Rev growth, highest Beta and lowest Market Cap.
+
+```
+
+## Question 3 patterns identified
+```{r}
+# Cluster 3 has been identified to have buy media recommendations as it is listed with highest Market Cap, highest ROE, highest ROA and highest Asset Turnover but does not have any Sell recommendations. Cluster 2 which has the highest PE ratio, lowest ROE, lowest ROA, lowest Asset Turnover, lowest Net Profit Margin will have mostly hold recommendations.
+# Cluster 4 which has the highest Net Profit Margin,lowest Rev growth, lowest Beta and lowest PE Ratio will also have a hold recommendation.
+```
+
+## Question 4 naming of the clusters
+```{r}
+# Cluster 1 - Lowest Leverage cluster
+# Cluster 2 - Net Profit Margin cluster (lowest ROE, lowest ROA)
+# Cluster 3 - Asset Turnover cluster (highest ROA, highest Asset Turnover Market Cap)
+# Cluster 4 - Revenue growth cluster (lowest Beta, lowest PE Ratio, Net Profit Margin)
+# Cluster 5 - Low Market Cap cluster (highest Leverage, highest Rev growth, highest Beta)
+```
